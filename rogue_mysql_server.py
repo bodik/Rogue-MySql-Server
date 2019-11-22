@@ -11,13 +11,14 @@ import logging
 import logging.handlers
 import argparse
 import os
+import uuid
 
 
 
-PORT = 3305
+PORT = 3306
 LOG_FILE = 'mysql.log'
 VERBOSE = False
-SAVE_FOLDER = os.sep.join(os.path.abspath(__file__).split(os.sep)[:-1]) + os.sep + 'Download' + os.sep
+SAVE_FOLDER = 'Download' + os.sep
 
 log = logging.getLogger(__name__)
 
@@ -218,8 +219,10 @@ class http_request_handler(asynchat.async_chat):
                                 )
                                 raise LastPacket()
                         else:
-                            with open(SAVE_FOLDER + os.path.normpath(self.current_filename).split(os.sep)[-1], 'wb') as fl:
+                            tmpfile = str(uuid.uuid4())
+                            with open(SAVE_FOLDER + tmpfile, 'wb') as fl:
                                 fl.write(data)
+                            log.info('downloaded %s to %s from %s', self.current_filename, tmpfile, self.addr)
                             if VERBOSE:
                                 print('***File %s obtained.***\n%s' % (self.current_filename, data[1:]))
                             self.set_terminator(3)
@@ -275,6 +278,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.files:
         filelist += open(args.files, 'r').read().split('\n')
+    filelist = list(filter(bool, filelist))
     if args.port:
         PORT = args.port
     if args.verbose:
